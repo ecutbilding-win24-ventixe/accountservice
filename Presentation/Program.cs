@@ -1,27 +1,37 @@
+using Data.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Presentation.Data;
-using Presentation.Interfaces;
 using Presentation.Services;
+using VerificationServiceGrpcServer;
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddScoped<IAccountService, AccountService>();
-builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("AccountSqlDatabase")));
+builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<DataContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(x =>
 {
     x.User.RequireUniqueEmail = true;
     x.Password.RequiredLength = 8;
 }).AddEntityFrameworkStores<DataContext>().AddDefaultTokenProviders();
 
+builder.Services.AddGrpcClient<VerificationServiceProto.VerificationServiceProtoClient>(x =>
+{
+    x.Address = new Uri(builder.Configuration["Grpc:VerificationServiceUrl"]!);
+});
+builder.Services.AddScoped<VerificationServiceClient>();
 
 var app = builder.Build();
 
 app.MapOpenApi();
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "AccountService API V1");
+    c.RoutePrefix = "";
+});
 app.UseHttpsRedirection();
 app.UseCors(x => x
     .AllowAnyOrigin()
