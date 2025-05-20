@@ -1,8 +1,7 @@
 using Data.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Presentation.Services;
-using VerificationServiceGrpcServer;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +15,6 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(x =>
     x.User.RequireUniqueEmail = true;
     x.Password.RequiredLength = 8;
 }).AddEntityFrameworkStores<DataContext>().AddDefaultTokenProviders();
-
-builder.Services.AddGrpcClient<VerificationServiceProto.VerificationServiceProtoClient>(x =>
-{
-    x.Address = new Uri(builder.Configuration["Grpc:VerificationServiceUrl"]!);
-});
-builder.Services.AddScoped<VerificationServiceClient>();
 
 var app = builder.Build();
 

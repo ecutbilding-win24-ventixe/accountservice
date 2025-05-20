@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.Models;
-using Presentation.Services;
-using System.Net.WebSockets;
 
 namespace Presentation.Controllers;
 
@@ -22,7 +21,7 @@ public class AccountsController(UserManager<IdentityUser> userManager) : Control
         if (existingAccount != null)
             return BadRequest("Email already in use.");
 
-        var user = new IdentityUser { UserName = model.Email, Email = model.Email };
+        var user = new IdentityUser { UserName = model.Email, Email = model.Email, EmailConfirmed = model.EmailConfirmed };
 
         var result = await _userManager.CreateAsync(user, model.Password);
 
@@ -33,6 +32,20 @@ public class AccountsController(UserManager<IdentityUser> userManager) : Control
         }
 
         return Ok(new AccountServiceResult { Succeeded = true, StatusCode = 200, Message = "User created successfully." });
+    }
+
+    [HttpGet("check-email")]
+    public async Task<IActionResult> CheckEmailExists([FromQuery] string email)
+    {
+        if (string.IsNullOrEmpty(email))
+            return BadRequest(new { Exists = false, Message = "Email is required." });
+
+        var user = await _userManager.FindByEmailAsync(email.Trim().ToLower());
+
+        if (user != null)
+            return Ok(new { Exists = true, Message = "Email already exists." });
+
+        return Ok(new { Exists = false, Message = "Email is available." });
     }
 
 }

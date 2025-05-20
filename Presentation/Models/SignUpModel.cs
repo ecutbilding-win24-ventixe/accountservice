@@ -15,4 +15,6 @@ public class SignUpModel
     [Required]
     [Compare("Password", ErrorMessage = "Passwords do not match.")]
     public string ConfirmPassword { get; set; } = null!;
+
+    public bool EmailConfirmed { get; set; } = false;
 }
