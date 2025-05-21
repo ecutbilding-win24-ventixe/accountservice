@@ -4,10 +4,19 @@ using Presentation.Models;
 
 namespace Presentation.Services;
 
-public class AccountService(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager) : IAccountService
+public class AccountService : IAccountService
 {
-    private readonly UserManager<IdentityUser> _userManager = userManager;
-    private readonly RoleManager<IdentityRole> _roleManager = roleManager;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly HttpClient _httpClient;
+
+    public AccountService(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, HttpClient httpClient)
+    {
+        _userManager = userManager;
+        _roleManager = roleManager;
+        _httpClient = httpClient;
+        _httpClient.BaseAddress = new Uri("https://ventixe-accountserviceprofile-exdnhxd3d0hkfcbj.swedencentral-01.azurewebsites.net");
+    }
 
     public async Task<AccountServiceResult> SignUpAsync(SignUpModel form)
     {
@@ -19,18 +28,37 @@ public class AccountService(UserManager<IdentityUser> userManager, RoleManager<I
 
             var user = new IdentityUser { UserName = form.Email, Email = form.Email, EmailConfirmed = form.EmailConfirmed };
             var result = await _userManager.CreateAsync(user, form.Password);
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                if (!await _roleManager.RoleExistsAsync("User"))
-                {
-                    await _roleManager.CreateAsync(new IdentityRole("User"));
-                }
-                var addRoleResult = await _userManager.AddToRoleAsync(user, "User");
-                if (!addRoleResult.Succeeded)
-                {
-                    return new AccountServiceResult { Succeeded = false, Message = "Error adding role to user" };
-                }
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return new AccountServiceResult { Succeeded = false, StatusCode = 400, Message = errors };
             }
+
+            if (!await _roleManager.RoleExistsAsync("User"))
+                await _roleManager.CreateAsync(new IdentityRole("User"));
+
+            var addRoleResult = await _userManager.AddToRoleAsync(user, "User");
+            if (!addRoleResult.Succeeded)
+            {
+                return new AccountServiceResult { Succeeded = false, Message = "Error adding role to user" };
+            }
+
+            var userProfileRequest = new CreateAccountServiceProfileRequest
+            {
+                UserId = user.Id,
+                FirstName = form.FirstName,
+                LastName = form.LastName,
+            };
+
+            
+            var response = await _httpClient.PostAsJsonAsync("/api/AccountProfileService/create-profile", userProfileRequest);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                return new AccountServiceResult { Succeeded = false, StatusCode = (int)response.StatusCode, Message = $"Error creating user profile: {errorMessage}" };
+            }
+
+
             return new AccountServiceResult { Succeeded = true, StatusCode = 200, Message = "User and role added in database!" };
         }
         catch (Exception ex)

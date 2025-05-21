@@ -38,9 +38,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
+
+
 
 app.MapOpenApi();
 app.UseSwagger();
