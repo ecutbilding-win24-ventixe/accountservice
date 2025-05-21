@@ -1,15 +1,17 @@
 ﻿using Azure.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Helper;
 using Presentation.Models;
 
 namespace Presentation.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AccountsController(UserManager<IdentityUser> userManager) : ControllerBase
+public class AccountsController(UserManager<IdentityUser> userManager, IConfiguration configuration) : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager = userManager;
+    private readonly IConfiguration _configuration = configuration;
 
     [HttpPost("signup")]
     public async Task<IActionResult> SignUp([FromBody] SignUpModel model)
@@ -32,6 +34,26 @@ public class AccountsController(UserManager<IdentityUser> userManager) : Control
         }
 
         return Ok(new AccountServiceResult { Succeeded = true, StatusCode = 200, Message = "User created successfully." });
+    }
+
+    [HttpPost("signin")]
+    public async Task<IActionResult> SignIn([FromBody] SignInModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+            return NotFound("Email not found");
+
+        var result = await _userManager.CheckPasswordAsync(user, model.Password);
+        if (!result)
+            return Unauthorized("Invalid password.");
+
+        var tokenGenerator = new GenerateJWTToken(_configuration);
+        var token = tokenGenerator.GenerateToken(new User { Id = user.Id, Email = user.Email! });
+
+        return Ok(new { Succeeded = true, token, email = user.Email, message = "User signed in succesfully...." });
     }
 
     [HttpGet("check-email")]
