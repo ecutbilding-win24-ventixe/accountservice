@@ -90,4 +90,14 @@ public class AccountService : IAccountService
     {
         return await _userManager.FindByEmailAsync(email);
     }
+
+    public async Task<CreateAccountServiceProfileRequest?> ProfilDetailsAsync(string userId)
+    {
+        var response = await _httpClient.GetAsync($"/api/AccountProfileService/get-profile/{userId}");
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<CreateAccountServiceProfileRequest>();
+    }
 }

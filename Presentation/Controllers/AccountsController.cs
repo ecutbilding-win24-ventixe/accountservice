@@ -37,8 +37,9 @@ public class AccountsController(IAccountService accountService, IConfiguration c
             return StatusCode(result.StatusCode, result);
 
         var user = await _accountService.GetUserByEmailAsync(model.Email);
+        var profileDetails = await _accountService.ProfilDetailsAsync(user!.Id);
         var tokenGenerator = new GenerateJWTToken(_configuration);
-        var token = tokenGenerator.GenerateToken(new User { Id = user!.Id, Email = user.Email! });
+        var token = tokenGenerator.GenerateToken(new User { Id = user!.Id, Email = user.Email!, FirstName = profileDetails?.FirstName, LastName = profileDetails?.LastName });
 
         return Ok(new { Succeeded = true, token, email = user.Email, message = "User signed in succesfully...." });
     }

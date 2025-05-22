@@ -23,7 +23,9 @@ public class GenerateJWTToken(IConfiguration configuration)
             [
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Name, user.Email),
+                new Claim(JwtRegisteredClaimNames.GivenName, user.FirstName ?? ""),
+                new Claim(JwtRegisteredClaimNames.FamilyName, user.LastName ?? ""),
+                new Claim(JwtRegisteredClaimNames.Name, $"{user.FirstName} {user.LastName}"),
             ]),
             Expires = DateTime.UtcNow.AddMinutes(configuration.GetValue<int>("Jwt:ExpireMinutes")),
             SigningCredentials = credentials,
