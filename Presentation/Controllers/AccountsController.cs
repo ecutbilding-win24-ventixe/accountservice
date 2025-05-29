@@ -36,12 +36,13 @@ public class AccountsController(IAccountService accountService, IConfiguration c
         if (!result.Succeeded)
             return StatusCode(result.StatusCode, result);
 
-        var user = await _accountService.GetUserByEmailAsync(model.Email);
-        var profileDetails = await _accountService.ProfilDetailsAsync(user!.Id);
-        var tokenGenerator = new GenerateJWTToken(_configuration);
-        var token = tokenGenerator.GenerateToken(new User { Id = user!.Id, Email = user.Email!, FirstName = profileDetails?.FirstName, LastName = profileDetails?.LastName });
+        var userId = result.UserId!;
 
-        return Ok(new { Succeeded = true, token, email = user.Email, message = "User signed in succesfully...." });
+        var user = await _accountService.GetUserByEmailAsync(model.Email);
+        var tokenGenerator = new GenerateJWTToken(_configuration);
+        var token = tokenGenerator.GenerateToken(new User { Id = user!.Id, Email = user.Email! });
+
+        return Ok(new { Succeeded = true, token, userId = user.Id, email = user.Email,  message = "User signed in succesfully...." });
     }
 
     [HttpGet("check-email")]

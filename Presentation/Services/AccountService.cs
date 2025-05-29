@@ -78,7 +78,7 @@ public class AccountService : IAccountService
             var result = await _userManager.CheckPasswordAsync(user, form.Password);
             if (!result)
                 return new AccountServiceResult { Succeeded = false, StatusCode = 401, Message = "Invalid password." };
-            return new AccountServiceResult { Succeeded = true, StatusCode = 200, Message = "User signed in successfully." };
+            return new AccountServiceResult { Succeeded = true, StatusCode = 200, Message = "User signed in successfully." , UserId = user.Id };
         }
         catch (Exception ex)
         {
@@ -89,15 +89,5 @@ public class AccountService : IAccountService
     public async Task<IdentityUser?> GetUserByEmailAsync(string email)
     {
         return await _userManager.FindByEmailAsync(email);
-    }
-
-    public async Task<CreateAccountServiceProfileRequest?> ProfilDetailsAsync(string userId)
-    {
-        var response = await _httpClient.GetAsync($"/api/AccountProfileService/get-profile/{userId}");
-
-        if (!response.IsSuccessStatusCode)
-            return null;
-
-        return await response.Content.ReadFromJsonAsync<CreateAccountServiceProfileRequest>();
     }
 }
